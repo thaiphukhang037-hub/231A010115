@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HỨNG TÁO — Apple Catcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#BFE9FF;--green:#65C466;--apple:#F04452;--apple-d:#D92D3A;--basket:#9B633B;--gold:#FFD166;--white:#FFF;--ink:#253047;--s:1}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Nunito,Poppins,Arial,sans-serif;color:var(--ink);background:linear-gradient(#e9f7ff,#d6f0d2);display:flex;justify-content:center;padding:16px 12px 28px}
+main{width:min(500px,100%);display:flex;flex-direction:column;gap:12px}
+header{text-align:center}
+.badge{display:inline-block;background:var(--ink);color:var(--gold);font-weight:800;font-size:12px;padding:3px 10px;border-radius:99px}
+h1{margin:4px 0 0;font-size:clamp(28px,8vw,40px);font-weight:900;color:var(--apple-d);letter-spacing:1px}
+h1 span{display:inline-block;animation:bob 2.4s ease-in-out infinite}
+header p{margin:2px 0 0;font-weight:700}
+@keyframes bob{50%{transform:translateY(-4px) rotate(-8deg)}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{background:var(--white);border-radius:14px;padding:6px 8px;text-align:center;box-shadow:0 4px 10px rgba(37,48,71,.12);border:2px solid #e3f1fa}
+.card small{display:block;font-size:13px;font-weight:700;opacity:.8}
+.card b{font-size:22px;font-weight:900}
+#score.pop{animation:pop .3s}
+@keyframes pop{50%{transform:scale(1.5);color:var(--apple-d)}}
+#lives{letter-spacing:2px}
+#lives.hit{animation:blink .5s}
+@keyframes blink{25%,75%{opacity:.2}}
+
+#game-container{width:500px;height:400px;position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(var(--sky) 0%,#e8f8ff 75%);border:3px solid var(--white);box-shadow:0 10px 28px rgba(37,48,71,.25);touch-action:none;user-select:none;-webkit-user-select:none;margin:0 auto}
+#game-container.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(4px)}}
+.cloud{position:absolute;left:0;top:0;background:#fff;border-radius:99px;opacity:.9;animation:drift linear infinite;width:calc(var(--s)*70px);height:calc(var(--s)*22px)}
+.cloud::before{content:"";position:absolute;left:18%;top:-70%;width:45%;height:130%;background:#fff;border-radius:50%}
+@keyframes drift{from{transform:translateX(-100px)}to{transform:translateX(calc(var(--s)*560px))}}
+.grass{position:absolute;left:0;right:0;bottom:0;height:calc(var(--s)*26px);background:repeating-linear-gradient(90deg,#65C466 0 14px,#58b45a 14px 28px);border-top:3px solid #4aa44c}
+#basket{position:absolute;left:0;top:0;width:calc(var(--s)*90px);height:calc(var(--s)*38px);z-index:3;will-change:transform}
+#basket svg{width:100%;height:100%;display:block;overflow:visible}
+#apple{position:absolute;left:0;top:0;width:calc(var(--s)*34px);height:calc(var(--s)*34px);z-index:2;font-size:calc(var(--s)*30px);line-height:calc(var(--s)*34px);text-align:center;will-change:transform;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}
+#apple span{display:block;animation:spin 1.6s linear infinite}
+#apple.hidden{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.particle{position:absolute;z-index:4;pointer-events:none;font-size:calc(var(--s)*14px);animation:fly .6s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}}
+.plus{position:absolute;z-index:4;pointer-events:none;color:#b8860b;font-weight:900;font-size:calc(var(--s)*20px);animation:rise .7s ease-out forwards;text-shadow:0 1px 0 #fff}
+@keyframes rise{to{transform:translateY(-30px);opacity:0}}
+.overlay{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:16px;background:rgba(37,48,71,.62);color:#fff;animation:fade .3s}
+.overlay[hidden]{display:none}
+.overlay h2{margin:0;font-size:clamp(26px,7vw,36px);font-weight:900;color:var(--gold)}
+.overlay p{margin:0;font-weight:700;font-size:clamp(14px,3.8vw,16px)}
+.overlay ul{margin:0;padding:0;list-style:none;font-weight:700;font-size:clamp(13px,3.6vw,15px);line-height:1.5}
+@keyframes fade{from{opacity:0;transform:scale(.94)}}
+
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+button{font:inherit;font-weight:800;font-size:16px;min-height:44px;padding:0 18px;border:0;border-radius:14px;cursor:pointer;color:#fff;background:var(--apple);box-shadow:0 4px 0 var(--apple-d);transition:transform .1s,box-shadow .1s,filter .15s}
+button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--apple-d)}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+button:disabled{opacity:.45;cursor:not-allowed}
+#pause-btn{background:var(--basket);box-shadow:0 4px 0 #744a2b}
+#restart-btn{background:var(--green);box-shadow:0 4px 0 #4aa44c;color:var(--ink)}
+#sound-btn{background:var(--white);color:var(--ink);box-shadow:0 4px 0 #cfdbe3}
+.overlay button{font-size:18px}
+.touch{display:none;gap:10px}
+.touch button{flex:1;min-height:60px;font-size:28px;background:var(--gold);color:var(--ink);box-shadow:0 4px 0 #d9a93c}
+@media (pointer:coarse){.touch{display:flex}.keys{display:none}}
+.help{text-align:center;font-weight:700;font-size:14px;margin:0}
+kbd{background:#fff;border:2px solid #cfdbe3;border-radius:6px;padding:0 6px;font-family:inherit;font-weight:800}
+@media (max-width:540px){
+ #game-container{width:min(500px,calc(100vw - 24px));height:auto;aspect-ratio:5/4}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+ <header>
+  <span class="badge">ARCADE GAME</span>
+  <h1><span aria-hidden="true">🍎</span> HỨNG TÁO</h1>
+  <p>Nhanh tay hứng táo, lập kỷ lục mới!</p>
+ </header>
+
+ <section class="stats" aria-label="Thông tin trò chơi">
+  <div class="card"><small>Điểm</small><b id="score">0</b></div>
+  <div class="card"><small>Mạng</small><b id="lives" aria-label="3 mạng">3</b></div>
+  <div class="card"><small>Kỷ lục</small><b id="best">0</b></div>
+ </section>
+
+ <div id="game-container" aria-label="Khung trò chơi hứng táo">
+  <div class="cloud" style="top:8%;animation-duration:38s"></div>
+  <div class="cloud" style="top:24%;animation-duration:55s;animation-delay:-20s"></div>
+  <div class="grass"></div>
+  <div id="apple" class="hidden"><span>🍎</span></div>
+  <div id="basket">
+   <svg viewBox="0 0 90 38" aria-hidden="true">
+    <path d="M18 8 Q45 -14 72 8" fill="none" stroke="#744a2b" stroke-width="4" stroke-linecap="round"/>
+    <path d="M2 8 H88 L78 36 Q77 38 74 38 H16 Q13 38 12 36 Z" fill="#9B633B" stroke="#744a2b" stroke-width="2"/>
+    <path d="M6 16 H84 M9 24 H81 M12 32 H78" stroke="#c48a5c" stroke-width="2.5"/>
+    <path d="M24 8 L20 36 M40 8 L38 38 M56 8 L58 38 M72 8 L76 36" stroke="#744a2b" stroke-width="2" opacity=".7"/>
+    <rect x="1" y="4" width="88" height="6" rx="3" fill="#b9794a" stroke="#744a2b" stroke-width="2"/>
+   </svg>
+  </div>
+  <div id="start-overlay" class="overlay">
+   <h2>HỨNG TÁO</h2>
+   <ul>
+    <li>Nhấn Bắt đầu để chơi.</li>
+    <li>Dùng phím ← → (hoặc A, D) để di chuyển.</li>
+    <li>Hứng táo để ghi điểm.</li>
+    <li>Mỗi lần bỏ lỡ sẽ mất một mạng.</li>
+    <li>Game kết thúc khi hết ba mạng.</li>
+   </ul>
+   <button id="overlay-start" type="button">Bắt đầu</button>
+  </div>
+  <div id="pause-overlay" class="overlay" hidden role="status">
+   <h2>Đã tạm dừng</h2>
+   <p>Nhấn Tiếp tục để chơi tiếp.</p>
+   <button id="overlay-resume" type="button">Tiếp tục</button>
+  </div>
+  <div id="gameover-overlay" class="overlay" hidden role="alert">
+   <h2>Game Over</h2>
+   <p>Điểm của bạn: <b id="final-score">0</b></p>
+   <p id="final-msg"></p>
+   <button id="overlay-restart" type="button">Chơi lại</button>
+  </div>
+ </div>
+
+ <div class="touch" aria-label="Điều khiển cảm ứng">
+  <button id="left-btn" type="button" aria-label="Sang trái">◀</button>
+  <button id="right-btn" type="button" aria-label="Sang phải">▶</button>
+ </div>
+
+ <div class="controls">
+  <button id="start-btn" type="button">Bắt đầu</button>
+  <button id="pause-btn" type="button" disabled>Tạm dừng</button>
+  <button id="restart-btn" type="button">Chơi lại</button>
+  <button id="sound-btn" type="button" aria-pressed="true">🔊 Âm thanh: Bật</button>
+ </div>
+ <p class="help keys">Điều khiển: <kbd>←</kbd> <kbd>→</kbd> hoặc <kbd>A</kbd> <kbd>D</kbd> · <kbd>Space</kbd> tạm dừng</p>
+ <p class="help">Trên điện thoại: giữ nút ◀ ▶ hoặc kéo ngón tay trong khung game.</p>
+ <p id="sr-status" class="help" style="position:absolute;left:-9999px" role="status" aria-live="polite"></p>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+// ===== 1. DOM =====
+const $ = id => document.getElementById(id);
+const el = {
+  box: $('game-container'), basket: $('basket'), apple: $('apple'),
+  score: $('score'), lives: $('lives'), best: $('best'),
+  startBtn: $('start-btn'), pauseBtn: $('pause-btn'), restartBtn: $('restart-btn'), soundBtn: $('sound-btn'),
+  startOv: $('start-overlay'), pauseOv: $('pause-overlay'), overOv: $('gameover-overlay'),
+  finalScore: $('final-score'), finalMsg: $('final-msg'), sr: $('sr-status')
+};
+
+// ===== 2. Trạng thái game (toạ độ logic trong khung 500x400) =====
+const W = 500, H = 400, BASKET_W = 90, BASKET_H = 38, APPLE_S = 34, BOTTOM_GAP = 10;
+const START_SPEED = 140, SPEED_STEP = 8, MAX_SPEED = 420, BASKET_SPEED = 380, MAX_DT = 0.05;
+
+const game = {
+  status: 'ready',            // ready | running | paused | gameover
+  score: 0, lives: 3, best: 0,
+  basketX: (W - BASKET_W) / 2,
+  appleX: 0, appleY: -APPLE_S, appleRot: 0,
+  fallSpeed: START_SPEED, basketSpeed: BASKET_SPEED,
+  animationFrameId: null, lastTime: 0,
+  keys: { left: false, right: false },
+  touchDir: 0, soundOn: true, scale: 1
+};
+const basketY = H - BASKET_H - BOTTOM_GAP;
+
+// ===== 3. Kỷ lục (localStorage an toàn) =====
+function loadBest() {
+  try { game.best = parseInt(localStorage.getItem('appleCatcherBest'), 10) || 0; } catch (e) { game.best = 0; }
+  el.best.textContent = game.best;
+}
+function saveBest() {
+  if (game.score > game.best) {
+    game.best = game.score;
+    el.best.textContent = game.best;
+    try { localStorage.setItem('appleCatcherBest', String(game.best)); } catch (e) { /* bỏ qua */ }
+  }
+}
+
+// ===== 4. Âm thanh (Web Audio, chỉ tạo sau tương tác) =====
+let audioCtx = null;
+function beep(freq, dur, type = 'sine', gain = 0.08, slideTo) {
+  if (!game.soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + dur);
+  } catch (e) { /* trình duyệt chặn hoặc không hỗ trợ */ }
+}
+const sfx = {
+  catch: () => { beep(660, .12, 'triangle'); setTimeout(() => beep(880, .12, 'triangle'), 80); },
+  miss: () => beep(300, .3, 'sawtooth', .06, 120),
+  over: () => { beep(400, .25, 'square', .05, 200); setTimeout(() => beep(200, .5, 'square', .05, 90), 250); }
+};
+
+// ===== 5. Render =====
+function render() {
+  const s = game.scale;
+  el.basket.style.transform = `translate3d(${game.basketX * s}px,${basketY * s}px,0)`;
+  el.apple.style.transform = `translate3d(${game.appleX * s}px,${game.appleY * s}px,0)`;
+}
+function updateScale() {
+  game.scale = el.box.clientWidth / W;
+  el.box.style.setProperty('--s', game.scale);
+  render();
+}
+function updateHud() {
+  el.score.textContent = game.score;
+  el.lives.textContent = '♥'.repeat(game.lives) + '♡'.repeat(3 - game.lives) + ' ' + game.lives;
+  el.lives.setAttribute('aria-label', game.lives + ' mạng');
+}
+function retrigger(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+
+// ===== 6. Hiệu ứng hạt (có giới hạn + dọn dẹp) =====
+function burst(x, y) {
+  const s = game.scale, icons = ['✨', '🍃', '⭐'];
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle'; p.textContent = icons[i % 3];
+    p.style.left = x * s + 'px'; p.style.top = y * s + 'px';
+    const a = (Math.PI * 2 * i) / 6;
+    p.style.setProperty('--dx', Math.cos(a) * 40 * s + 'px');
+    p.style.setProperty('--dy', Math.sin(a) * 40 * s - 15 + 'px');
+    p.addEventListener('animationend', () => p.remove());
+    el.box.appendChild(p);
+  }
+  const t = document.createElement('div');
+  t.className = 'plus'; t.textContent = '+1';
+  t.style.left = x * s + 'px'; t.style.top = (y - 20) * s + 'px';
+  t.addEventListener('animationend', () => t.remove());
+  el.box.appendChild(t);
+}
+function clearEffects() { el.box.querySelectorAll('.particle,.plus').forEach(n => n.remove()); }
+
+// ===== 7. Giỏ & táo =====
+function clampBasket() { game.basketX = Math.max(0, Math.min(W - BASKET_W, game.basketX)); }
+function moveBasket(dt) {
+  const dir = (game.keys.right ? 1 : 0) - (game.keys.left ? 1 : 0) + game.touchDir;
+  game.basketX += Math.max(-1, Math.min(1, dir)) * game.basketSpeed * dt;
+  clampBasket();
+}
+function spawnApple() {
+  game.appleX = Math.random() * (W - APPLE_S);   // luôn nằm trong khung
+  game.appleY = -APPLE_S;
+}
+
+// ===== 8. Va chạm AABB — chỉ tính khi táo đang rơi vào miệng giỏ =====
+function isCaught() {
+  const aL = game.appleX, aR = aL + APPLE_S, aT = game.appleY, aB = aT + APPLE_S;
+  const bL = game.basketX, bR = bL + BASKET_W, bT = basketY, bB = bT + BASKET_H;
+  const overlap = aL < bR && aR > bL && aT < bB && aB > bT;
+  const aboveBottomHalf = aT + APPLE_S / 2 <= bT + 16;  // tâm táo còn ở vùng miệng giỏ
+  return overlap && aboveBottomHalf;
+}
+
+// ===== 9. Điểm / mạng / game over =====
+function onCatch() {
+  game.score += 1;
+  game.fallSpeed = Math.min(MAX_SPEED, game.fallSpeed + SPEED_STEP);
+  updateHud(); retrigger(el.score, 'pop'); sfx.catch();
+  burst(game.appleX + APPLE_S / 2, basketY);
+  // Đổi nhẹ màu nền theo mốc điểm
+  el.box.style.background = `linear-gradient(hsl(${200 + (Math.floor(game.score / 10) * 18) % 60} 90% 85%) 0%,#e8f8ff 75%)`;
+  spawnApple();
+}
+function onMiss() {
+  game.lives = Math.max(0, game.lives - 1);
+  updateHud(); retrigger(el.lives, 'hit'); retrigger(el.box, 'shake'); sfx.miss();
+  el.sr.textContent = 'Bạn vừa bỏ lỡ táo. Còn ' + game.lives + ' mạng.';
+  if (game.lives === 0) { endGame(); return; }
+  spawnApple();
+}
+function endGame() {
+  game.status = 'gameover';
+  stopLoop();
+  game.keys.left = game.keys.right = false; game.touchDir = 0;
+  el.apple.classList.add('hidden');
+  saveBest(); sfx.over();
+  el.finalScore.textContent = game.score;
+  el.finalMsg.textContent = game.score >= 20 ? 'Tuyệt vời! Bạn là cao thủ hứng táo!' : game.score >= 8 ? 'Khá lắm! Thử phá kỷ lục nhé!' : 'Đừng nản, thử lại nào!';
+  el.overOv.hidden = false;
+  el.sr.textContent = 'Game Over. Điểm cuối: ' + game.score;
+  syncButtons();
+}
+
+// ===== 10. Vòng lặp requestAnimationFrame =====
+function stopLoop() {
+  if (game.animationFrameId !== null) { cancelAnimationFrame(game.animationFrameId); game.animationFrameId = null; }
+}
+function startLoop() {
+  stopLoop();                                  // đảm bảo chỉ có một vòng lặp
+  game.lastTime = performance.now();           // đặt lại mốc để dt không quá lớn
+  game.animationFrameId = requestAnimationFrame(loop);
+}
+function loop(now) {
+  if (game.status !== 'running') { game.animationFrameId = null; return; }
+  const dt = Math.min((now - game.lastTime) / 1000, MAX_DT);   // giới hạn delta time
+  game.lastTime = now;
+  moveBasket(dt);
+  game.appleY += game.fallSpeed * dt;
+  game.appleRot += dt;
+  if (isCaught()) onCatch();
+  else if (game.appleY >= H) onMiss();         // chỉ trừ 1 mạng rồi táo được đặt lại ngay
+  render();
+  if (game.status === 'running') game.animationFrameId = requestAnimationFrame(loop);
+  else game.animationFrameId = null;
+}
+
+// ===== 11. Start / Pause / Resume / Restart =====
+function resetState() {
+  stopLoop(); clearEffects();
+  game.score = 0; game.lives = 3; game.fallSpeed = START_SPEED;
+  game.basketX = (W - BASKET_W) / 2;
+  game.keys.left = game.keys.right = false; game.touchDir = 0;
+  el.box.style.background = '';
+  spawnApple(); updateHud(); render();
+}
+function startGame() {
+  if (game.status === 'running') return;
+  if (game.status === 'paused') { resumeGame(); return; }
+  resetState();
+  el.apple.classList.remove('hidden');
+  el.startOv.hidden = true; el.overOv.hidden = true; el.pauseOv.hidden = true;
+  game.status = 'running';
+  syncButtons(); startLoop();
+  el.sr.textContent = 'Trò chơi bắt đầu.';
+}
+function pauseGame() {
+  if (game.status !== 'running') return;
+  game.status = 'paused'; stopLoop();
+  game.keys.left = game.keys.right = false; game.touchDir = 0;   // xoá phím cũ
+  el.pauseOv.hidden = false; syncButtons();
+  el.sr.textContent = 'Đã tạm dừng.';
+}
+function resumeGame() {
+  if (game.status !== 'paused') return;
+  game.status = 'running';
+  el.pauseOv.hidden = true; syncButtons(); startLoop();
+}
+function restartGame() {
+  game.status = 'ready';
+  startGame();
+}
+function syncButtons() {
+  const st = game.status;
+  el.startBtn.disabled = st === 'running' || st === 'paused';
+  el.pauseBtn.disabled = !(st === 'running' || st === 'paused');
+  el.pauseBtn.textContent = st === 'paused' ? 'Tiếp tục' : 'Tạm dừng';
+  el.restartBtn.disabled = st === 'ready';
+}
+
+// ===== 12. Sự kiện =====
+const dirKey = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' };
+document.addEventListener('keydown', e => {
+  const d = dirKey[e.key];
+  if (d) {
+    if (e.key.startsWith('Arrow')) e.preventDefault();   // chặn cuộn trang
+    if (game.status === 'running') game.keys[d] = true;
+  } else if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
+    e.preventDefault();
+    game.status === 'running' ? pauseGame() : game.status === 'paused' ? resumeGame() : null;
+  }
+});
+document.addEventListener('keyup', e => { const d = dirKey[e.key]; if (d) game.keys[d] = false; });
+window.addEventListener('blur', () => { game.keys.left = game.keys.right = false; });
+
+el.startBtn.addEventListener('click', startGame);
+$('overlay-start').addEventListener('click', startGame);
+el.pauseBtn.addEventListener('click', () => game.status === 'paused' ? resumeGame() : pauseGame());
+$('overlay-resume').addEventListener('click', resumeGame);
+el.restartBtn.addEventListener('click', restartGame);
+$('overlay-restart').addEventListener('click', restartGame);
+el.soundBtn.addEventListener('click', () => {
+  game.soundOn = !game.soundOn;
+  el.soundBtn.textContent = game.soundOn ? '🔊 Âm thanh: Bật' : '🔇 Âm thanh: Tắt';
+  el.soundBtn.setAttribute('aria-pressed', String(game.soundOn));
+});
+
+// Nút cảm ứng trái/phải
+function holdButton(btn, dir) {
+  const on = e => { e.preventDefault(); if (game.status === 'running') game.touchDir = dir; };
+  const off = () => { if (game.touchDir === dir) game.touchDir = 0; };
+  btn.addEventListener('pointerdown', on);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => btn.addEventListener(t, off));
+}
+holdButton($('left-btn'), -1); holdButton($('right-btn'), 1);
+
+// Kéo ngón tay / chuột trong khung để đưa giỏ tới vị trí
+let dragging = false;
+function dragTo(e) {
+  if (game.status !== 'running') return;
+  const r = el.box.getBoundingClientRect();
+  game.basketX = (e.clientX - r.left) / game.scale - BASKET_W / 2;
+  clampBasket();
+}
+el.box.addEventListener('pointerdown', e => { if (e.target.closest('.overlay')) return; dragging = true; dragTo(e); });
+el.box.addEventListener('pointermove', e => { if (dragging) dragTo(e); });
+['pointerup', 'pointercancel'].forEach(t => window.addEventListener(t, () => { dragging = false; }));
+
+// Tự tạm dừng khi chuyển tab
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+window.addEventListener('resize', updateScale);
+
+// ===== 13. Khởi tạo =====
+loadBest();
+resetState();
+el.apple.classList.add('hidden');   // chưa bắt đầu: táo không rơi
+syncButtons();
+updateScale();
+})();
+</script>
+</body>
+</html>
